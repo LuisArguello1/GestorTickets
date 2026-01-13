@@ -11,25 +11,30 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
 from pathlib import Path
-
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
+from pathlib import Path
+import environ
+import os
+# Construye rutas dentro del proyecto como esta: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+#Variables de entorno
+env = environ.Env(
+    # establecer el tipo de conversión y el valor por defecto
+    DEBUG=(bool, False)
+)
 
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
+# Tomar variables de entorno del archivo .env
+environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-$fpub!c6o-561at3mccmc63b!zykl*c@su52^3=+fv(d(bw4w@'
+SECRET_KEY = env('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = env('DEBUG')
 
 ALLOWED_HOSTS = []
 
-
-# Application definition
-
+# Definición de aplicaciones
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -38,6 +43,29 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
 ]
+
+# Aplicaciones de terceros
+THIRD_PARTY_APPS = [
+    'django_extensions',
+    'widget_tweaks',
+    'tailwind',
+    'theme',
+]
+
+# Aplicaciones locales
+LOCAL_APPS = [
+    'apps.core',
+    'apps.company',
+    'apps.ticket'
+]
+
+# Apps solo para DEBUG, y no para produccion
+if DEBUG:
+    THIRD_PARTY_APPS += ['django_browser_reload']
+
+INSTALLED_APPS = INSTALLED_APPS + THIRD_PARTY_APPS + LOCAL_APPS
+
+TAILWIND_APP_NAME = 'theme'
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -49,18 +77,24 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
+# Middleware solo para DEBUG, y no para produccion
+if DEBUG:
+    MIDDLEWARE += [
+        "django_browser_reload.middleware.BrowserReloadMiddleware",
+    ]
+
 ROOT_URLCONF = 'config.urls'
 
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [os.path.join(BASE_DIR, 'templates')],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
-                'django.contrib.messages.context_processors.messages',
+                'django.contrib.messages.context_processors.messages'
             ],
         },
     },
@@ -99,19 +133,26 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 
-# Internationalization
-# https://docs.djangoproject.com/en/6.0/topics/i18n/
+# Internacionalización
+# https://docs.djangoproject.com/en/5.2/topics/i18n/
+#Idioma: Español, Pais: Ecuador
+LANGUAGE_CODE = 'es-ec'
 
-LANGUAGE_CODE = 'en-us'
-
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'America/Guayaquil'
 
 USE_I18N = True
 
 USE_TZ = True
 
+#Para Produccion
+# SECURE_SSL_REDIRECT = env("SECURE_SSL_REDIRECT")
+# SESSION_COOKIE_SECURE = env("SESSION_COOKIE_SECURE")
+# CSRF_COOKIE_SECURE = env("CSRF_COOKIE_SECURE")
 
-# Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/6.0/howto/static-files/
+# Configuración de archivos de estaticos
+STATIC_URL = '/static/'
+STATICFILES_DIRS = [BASE_DIR / "static",]
+STATIC_ROOT = BASE_DIR / 'staticfiles'
 
-STATIC_URL = 'static/'
+#Npm configuracion para Tailwin
+NPM_BIN_PATH = r"D:\Node Js\npm.cmd"
