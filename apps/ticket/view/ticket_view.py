@@ -3,8 +3,8 @@ from django.urls import reverse_lazy
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
 from django.contrib import messages
 from django.forms import modelformset_factory
-from .models import Ticket, TicketDetail
-from .forms import TicketForm, TicketDetailForm, TicketDetailFormSet
+from apps.ticket.models import Ticket, TicketDetail
+from apps.ticket.forms import TicketForm, TicketDetailForm, TicketDetailFormSet
 
 
 class TicketListView(ListView):

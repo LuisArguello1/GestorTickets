@@ -1,0 +1,55 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>{% block title %}{% endblock %}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- Para visualizar los icono de font Awesome (fas fa) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <!-- SweetAlert2 para modales elegantes -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <!-- Css adicional para complementar Tailwind -->
+    <link rel="stylesheet" href="{% static 'css/message.css' %}">
+    <link rel="stylesheet" href="{% static 'css/base.css' %}">
+    <link rel="stylesheet" href="{% static 'css/loading.css' %}">
+
+    <!-- Agregar extras a la base -->
+    {% block extra_head %}{% endblock %}
+    
+</head>
+<body class="min-h-screen flex flex-col bg-neutral-50 relative overflow-x-hidden" id="body">
+
+    <!-- Incluir sistema de alertas/mensajes -->
+    {% include "fragments/alerts.html" %}
+    
+    <!-- Componente de Loading -->
+    {% include "components/loading.html" %}
+
+    <!-- Navbar -->
+    {% include "components/navbar.html" %}
+
+    <div class="flex flex-1"> 
+        <!-- Sidebar -->
+        {% include "components/sidebar.html" %}
+
+        <!-- Contenido principal -->
+        <main class="flex-1 p-4 lg:p-6 w-full bg-gray-50 min-h-[calc(100vh-3.5rem)]">  <!-- Ajustar bg y min-h -->
+            <div class="mx-auto w-full max-w-7xl">
+                {% block content %}
+                <!-- Aquí va el contenido de cada página -->
+                {% endblock %}
+            </div>
+        </main>
+    </div>
+
+    <!-- Scripts -->
+    {% include "partials/scripts.html" %}
+    
+    {% block extra_scripts %}{% endblock %}
+
+</body>
+</html>
