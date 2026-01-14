@@ -1,6 +1,7 @@
 from django.shortcuts import render
 from apps.ticket.models import Ticket
 from apps.company.models import Company
+from datetime import date
 
 
 def dashboard(request):
@@ -11,7 +12,7 @@ def dashboard(request):
     # Estadísticas
     total_tickets = Ticket.objects.count()
     total_companies = Company.objects.count()
-    tickets_today = Ticket.objects.filter(date__date__gte=request.GET.get('date', None)).count() if request.GET.get('date') else 0
+    tickets_today = Ticket.objects.filter(date__date=date.today()).count()
     recent_tickets = Ticket.objects.select_related('company').order_by('-date')[:5]
 
     context = {

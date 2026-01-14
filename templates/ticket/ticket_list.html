@@ -1,4 +1,4 @@
-{% extends 'layouts/base.html' %}
+{% extends 'layouts/dashboard.html' %}
 {% load static %}
 
 {% block title %}Tickets{% endblock %}
@@ -12,7 +12,7 @@
                 <h1 class="text-2xl font-bold text-gray-900">Tickets</h1>
                 <p class="text-sm text-gray-600 mt-1">Listado y gestión de tickets</p>
             </div>
-            <a href="#" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md transition duration-200 text-sm font-medium">
+            <a href="{% url 'ticket:ticket_create' %}" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md transition duration-200 text-sm font-medium">
                 Nuevo Ticket
             </a>
         </div>
@@ -70,9 +70,9 @@
                         <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{{ ticket.company.name }}</td>
                         <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">${{ ticket.total|floatformat:2 }}</td>
                         <td class="px-4 py-3 whitespace-nowrap text-sm font-medium space-x-2">
-                            <a href="#' ticket.pk %}" class="text-indigo-600 hover:text-indigo-900">Ver</a>
-                            <a href="#' ticket.pk %}" class="text-blue-600 hover:text-blue-900">Editar</a>
-                            <a href="#' ticket.pk %}" class="text-red-600 hover:text-red-900">Eliminar</a>
+                            <a href="{% url 'ticket:ticket_detail' ticket.pk %}" class="text-indigo-600 hover:text-indigo-900">Ver</a>
+                            <a href="{% url 'ticket:ticket_update' ticket.pk %}" class="text-blue-600 hover:text-blue-900">Editar</a>
+                            <a href="#" class="text-red-600 hover:text-red-900 delete-ticket" data-url="{% url 'ticket:ticket_delete' ticket.pk %}" data-name="{{ ticket.document_number }}">Eliminar</a>
                         </td>
                     </tr>
                     {% empty %}
@@ -90,4 +90,13 @@
     <!-- Paginación -->
     {% include "components/pagination.html" %}
 </div>
+
+<!-- Formulario oculto para CSRF -->
+<form id="delete-form" method="post" style="display: none;">
+    {% csrf_token %}
+</form>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{% static 'js/ticket_list.js' %}"></script>
 {% endblock %}

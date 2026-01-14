@@ -1,0 +1,102 @@
+{% extends 'layouts/dashboard.html' %}
+{% load static %}
+
+{% block title %}Detalle del Ticket{% endblock %}
+
+{% block content %}
+<div class="bg-white shadow rounded-lg p-6">
+    <div class="flex items-center justify-between mb-6">
+        <h1 class="text-2xl font-bold text-gray-900">Ticket #{{ ticket.document_number }}</h1>
+        <div class="flex space-x-2">
+            <a href="{% url 'ticket:ticket_print' ticket.pk %}?size=80" target="_blank" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                <i class="fas fa-print mr-2"></i>Imprimir (80mm)
+            </a>
+            <a href="{% url 'ticket:ticket_print' ticket.pk %}?size=A4" target="_blank" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">
+                <i class="fas fa-print mr-2"></i>Imprimir (A4)
+            </a>
+            <a href="{% url 'ticket:ticket_list' %}" class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded">
+                <i class="fas fa-arrow-left mr-2"></i>Volver
+            </a>
+        </div>
+    </div>
+
+    <!-- Información del Ticket -->
+    <div class="bg-gray-50 p-4 rounded-lg mb-6">
+        <h3 class="text-lg font-medium text-gray-900 mb-4">Información del Ticket</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div>
+                <span class="block text-sm font-medium text-gray-700">Número de Documento</span>
+                <span class="text-sm text-gray-900">{{ ticket.document_number }}</span>
+            </div>
+            <div>
+                <span class="block text-sm font-medium text-gray-700">Compañía</span>
+                <span class="text-sm text-gray-900">{{ ticket.company.name }}</span>
+            </div>
+            <div>
+                <span class="block text-sm font-medium text-gray-700">Fecha</span>
+                <span class="text-sm text-gray-900">{{ ticket.date|date:"d/m/Y" }}</span>
+            </div>
+            <div>
+                <span class="block text-sm font-medium text-gray-700">Cliente</span>
+                <span class="text-sm text-gray-900">{{ ticket.client }}</span>
+            </div>
+            <div>
+                <span class="block text-sm font-medium text-gray-700">CI/RUC</span>
+                <span class="text-sm text-gray-900">{{ ticket.ci_ruc }}</span>
+            </div>
+            <div>
+                <span class="block text-sm font-medium text-gray-700">Vendedor</span>
+                <span class="text-sm text-gray-900">{{ ticket.seller }}</span>
+            </div>
+            <div>
+
+                <span class="block text-sm font-medium text-gray-700">IVA (%)</span>
+                <span class="text-sm text-gray-900">{{ ticket.iva_percentage }}%</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Detalles del Ticket -->
+    <div class="bg-white border rounded-lg overflow-hidden">
+        <div class="px-4 py-3 bg-gray-50 border-b border-gray-200">
+            <h3 class="text-lg font-medium text-gray-900">Detalles del Ticket</h3>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Producto</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cantidad</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Precio Unit.</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Subtotal</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for detail in details %}
+                    <tr>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ detail.product }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ detail.quantity }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${{ detail.unit_price|floatformat:2 }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${{ detail.total|floatformat:2 }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot class="bg-gray-50">
+                    <tr>
+                        <td colspan="3" class="px-6 py-4 text-sm font-medium text-gray-900 text-right">Subtotal:</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${{ ticket.subtotal|floatformat:2 }}</td>
+                    </tr>
+                    <tr>
+                        <td colspan="3" class="px-6 py-4 text-sm font-medium text-gray-900 text-right">IVA ({{ ticket.iva_percentage }}%):</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${{ ticket.iva_amount|floatformat:2 }}</td>
+                    </tr>
+                    <tr>
+                        <td colspan="3" class="px-6 py-4 text-sm font-bold text-gray-900 text-right">Total:</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900">${{ ticket.total|floatformat:2 }}</td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
