@@ -52,9 +52,9 @@ class TicketForm(BaseModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Si es edición, mostrar detalles existentes
+
         if self.instance and self.instance.pk:
-            self.fields['company'].disabled = True  # No cambiar compañía en edición
+            self.fields['company'].disabled = True  
 
     def clean_ci_ruc(self):
         """Valida formato básico del CI/RUC."""
@@ -79,6 +79,6 @@ class TicketForm(BaseModelForm):
 TicketDetailFormSet = modelformset_factory(
     TicketDetail,
     form=TicketDetailForm,
-    extra=1,  # Una fila extra para agregar
+    extra=1, 
     can_delete=True,  # Permitir eliminar
 )
