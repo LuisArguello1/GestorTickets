@@ -52,7 +52,7 @@ class TicketForm(BaseModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Si es edición, mostrar detalles existentes
+
         if self.instance and self.instance.pk:
             if 'company' in self.fields:
                 self.fields['company'].disabled = True  # No cambiar compañía en edición

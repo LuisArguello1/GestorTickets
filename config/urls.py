@@ -23,6 +23,8 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include('apps.core.urls')),
     path('ticket/', include('apps.ticket.urls')),
+    path('company/', include('apps.company.urls'))
+    
 ]
 
 if settings.DEBUG:

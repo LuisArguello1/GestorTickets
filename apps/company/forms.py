@@ -24,7 +24,7 @@ class CompanyForm(BaseModelForm):
             raise forms.ValidationError("El RUC es obligatorio.")
         if len(ruc) < 10 or len(ruc) > 20:
             raise forms.ValidationError("El RUC debe tener entre 10 y 20 caracteres.")
-        # Verificar unicidad excluyendo la instancia actual si es edición
+
         if Company.objects.filter(ruc=ruc).exclude(pk=self.instance.pk if self.instance else None).exists():
             raise forms.ValidationError("Este RUC ya está registrado.")
         return ruc
