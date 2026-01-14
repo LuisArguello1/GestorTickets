@@ -41,6 +41,12 @@
                 <a href="{% url 'ticket:ticket_list' %}" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-md transition duration-200 text-sm font-medium">
                     Limpiar
                 </a>
+                <button type="button" id="mass-print-btn" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md transition duration-200 text-sm font-medium">
+                    <i class="fas fa-print mr-2"></i>Imprimir en Masa
+                </button>
+                <a href="{% url 'ticket:ticket_export_excel' %}" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md transition duration-200 text-sm font-medium">
+                    <i class="fas fa-file-excel mr-2"></i>Exportar Excel
+                </a>
             </div>
         </form>
     </div>
@@ -91,6 +97,30 @@
     {% include "components/pagination.html" %}
 </div>
 
+<!-- Modal de Impresión en Masa -->
+<div id="mass-print-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
+    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+        <div class="mt-3">
+            <h3 class="text-lg font-medium text-gray-900 mb-4">Impresión en Masa de Tickets</h3>
+            <form id="mass-print-form">
+                <div class="mb-4">
+                    <label for="modal-date-from" class="block text-sm font-medium text-gray-700 mb-1">Fecha Desde (opcional)</label>
+                    <input type="date" id="modal-date-from" name="date_from" class="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm">
+                </div>
+                <div class="mb-4">
+                    <label for="modal-date-to" class="block text-sm font-medium text-gray-700 mb-1">Fecha Hasta (opcional)</label>
+                    <input type="date" id="modal-date-to" name="date_to" class="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm">
+                </div>
+                <p class="text-xs text-gray-500 mb-4">Si no seleccionas fechas, se imprimirán todos los tickets (máximo 6 por página).</p>
+            </form>
+        </div>
+        <div class="flex justify-end gap-2">
+            <button id="cancel-mass-print" class="px-4 py-2 bg-gray-500 text-white text-sm font-medium rounded-md hover:bg-gray-600">Cancelar</button>
+            <button id="confirm-mass-print" class="px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-md hover:bg-green-700">Imprimir</button>
+        </div>
+    </div>
+</div>
+
 <!-- Formulario oculto para CSRF -->
 <form id="delete-form" method="post" style="display: none;">
     {% csrf_token %}
@@ -99,4 +129,48 @@
 
 {% block extra_scripts %}
 <script src="{% static 'js/ticket_list.js' %}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Modal de impresión en masa
+    const massPrintBtn = document.getElementById('mass-print-btn');
+    const massPrintModal = document.getElementById('mass-print-modal');
+    const cancelMassPrint = document.getElementById('cancel-mass-print');
+    const confirmMassPrint = document.getElementById('confirm-mass-print');
+    const dateFromInput = document.getElementById('modal-date-from');
+    const dateToInput = document.getElementById('modal-date-to');
+
+    massPrintBtn.addEventListener('click', function() {
+        massPrintModal.classList.remove('hidden');
+    });
+
+    cancelMassPrint.addEventListener('click', function() {
+        massPrintModal.classList.add('hidden');
+        dateFromInput.value = '';
+        dateToInput.value = '';
+    });
+
+    confirmMassPrint.addEventListener('click', function() {
+        const dateFrom = dateFromInput.value;
+        const dateTo = dateToInput.value;
+        let url = '{% url "ticket:ticket_mass_print" %}';
+        const params = [];
+        if (dateFrom) params.push(`date_from=${dateFrom}`);
+        if (dateTo) params.push(`date_to=${dateTo}`);
+        if (params.length > 0) url += '?' + params.join('&');
+        window.open(url, '_blank');
+        massPrintModal.classList.add('hidden');
+        dateFromInput.value = '';
+        dateToInput.value = '';
+    });
+
+    // Cerrar modal al hacer clic fuera
+    massPrintModal.addEventListener('click', function(e) {
+        if (e.target === massPrintModal) {
+            massPrintModal.classList.add('hidden');
+            dateFromInput.value = '';
+            dateToInput.value = '';
+        }
+    });
+});
+</script>
 {% endblock %}

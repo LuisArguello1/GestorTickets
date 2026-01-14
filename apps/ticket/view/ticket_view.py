@@ -4,6 +4,9 @@ from django.views.generic import ListView, DetailView, CreateView, UpdateView, D
 from django.contrib import messages
 from django.forms import modelformset_factory
 from django.db import transaction
+from django.http import HttpResponse
+from openpyxl import Workbook
+from openpyxl.styles import Font, PatternFill
 from apps.ticket.models import Ticket, TicketDetail
 from apps.ticket.forms import TicketForm, TicketDetailForm
 
@@ -61,6 +64,13 @@ class TicketCreateView(CreateView):
     form_class = TicketForm
     template_name = 'ticket/ticket_form.html'
     success_url = reverse_lazy('ticket:ticket_list')
+
+    def get(self, request, *args, **kwargs):
+        from apps.company.models import Company
+        if not Company.objects.exists():
+            messages.warning(request, 'Debe crear al menos una compañía antes de crear tickets.')
+            return redirect('company:company_list')
+        return super().get(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -255,3 +265,105 @@ class TicketPrintView(DetailView):
         context['details'] = self.object.details.all()
         context['size'] = self.request.GET.get('size', '80')  # 58, 80, A4
         return context
+
+
+class TicketMassPrintView(ListView):
+    """
+    Vista para imprimir múltiples tickets en masa (hasta 6 por página).
+    """
+    model = Ticket
+    template_name = 'ticket/ticket_mass_print.html'
+    context_object_name = 'tickets'
+
+    def get_queryset(self):
+        queryset = super().get_queryset().select_related('company')
+        date_from = self.request.GET.get('date_from')
+        date_to = self.request.GET.get('date_to')
+        if date_from and date_to:
+            queryset = queryset.filter(date__date__range=[date_from, date_to])
+        elif date_from:
+            queryset = queryset.filter(date__date__gte=date_from)
+        elif date_to:
+            queryset = queryset.filter(date__date__lte=date_to)
+        return queryset.order_by('-date')[:6]  # Máximo 6 tickets
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        for ticket in context['tickets']:
+            ticket.details_list = ticket.details.all()
+        context['date_from'] = self.request.GET.get('date_from', '')
+        context['date_to'] = self.request.GET.get('date_to', '')
+        return context
+
+
+def export_tickets_excel(request):
+    """
+    Vista para exportar todos los tickets a Excel.
+    """
+    # Crear workbook
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Tickets"
+
+    # Estilos
+    header_font = Font(bold=True, color="FFFFFF")
+    header_fill = PatternFill(start_color="366092", end_color="366092", fill_type="solid")
+
+    # Encabezados
+    headers = [
+        'Número de Ticket', 'Fecha', 'Cliente', 'Vendedor', 'CI/RUC', 'Teléfono', 'Placa',
+        'Compañía', 'Producto', 'Cantidad', 'Precio Unitario', 'Subtotal Producto',
+        'Subtotal Ticket', 'IVA (%)', 'Monto IVA', 'Total Ticket'
+    ]
+    
+    for col_num, header in enumerate(headers, 1):
+        cell = ws.cell(row=1, column=col_num, value=header)
+        cell.font = header_font
+        cell.fill = header_fill
+
+    # Obtener tickets con detalles
+    tickets = Ticket.objects.select_related('company').prefetch_related('details').order_by('-date')
+    
+    row_num = 2
+    for ticket in tickets:
+        # Para cada ticket, agregar filas por cada detalle
+        for detail in ticket.details.all():
+            ws.cell(row=row_num, column=1, value=ticket.document_number)
+            ws.cell(row=row_num, column=2, value=ticket.date.strftime('%Y-%m-%d %H:%M'))
+            ws.cell(row=row_num, column=3, value=ticket.client)
+            ws.cell(row=row_num, column=4, value=ticket.seller)
+            ws.cell(row=row_num, column=5, value=ticket.ci_ruc)
+            ws.cell(row=row_num, column=6, value=ticket.phone)
+            ws.cell(row=row_num, column=7, value=ticket.plate)
+            ws.cell(row=row_num, column=8, value=ticket.company.name if ticket.company else '')
+            ws.cell(row=row_num, column=9, value=detail.product)
+            ws.cell(row=row_num, column=10, value=float(detail.quantity))
+            ws.cell(row=row_num, column=11, value=float(detail.unit_price))
+            ws.cell(row=row_num, column=12, value=float(detail.total))
+            ws.cell(row=row_num, column=13, value=float(ticket.subtotal))
+            ws.cell(row=row_num, column=14, value=float(ticket.iva_percentage))
+            ws.cell(row=row_num, column=15, value=float(ticket.iva_amount))
+            ws.cell(row=row_num, column=16, value=float(ticket.total))
+            row_num += 1
+
+    # Ajustar ancho de columnas
+    for column in ws.columns:
+        max_length = 0
+        column_letter = column[0].column_letter
+        for cell in column:
+            try:
+                if len(str(cell.value)) > max_length:
+                    max_length = len(str(cell.value))
+            except:
+                pass
+        adjusted_width = (max_length + 2)
+        ws.column_dimensions[column_letter].width = adjusted_width
+
+    # Respuesta HTTP
+    response = HttpResponse(
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+    response['Content-Disposition'] = 'attachment; filename=tickets_export.xlsx'
+    
+    wb.save(response)
+    return response

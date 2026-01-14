@@ -1,0 +1,186 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Impresión Masiva de Tickets</title>
+    <style>
+        @page {
+            margin: 0.5cm;
+            size: A4 landscape;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Courier New', monospace;
+            font-size: 10px;
+            line-height: 1.2;
+            color: #000;
+            background: white;
+        }
+
+        .tickets-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            padding: 10px;
+            justify-items: center;
+        }
+
+        .ticket {
+            border: 1px solid #000;
+            padding: 8px;
+            width: 80mm;
+            height: 60mm;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            page-break-inside: avoid;
+            box-sizing: border-box;
+        }
+
+        .ticket-header {
+            text-align: center;
+            border-bottom: 1px dashed #000;
+            padding-bottom: 5px;
+            margin-bottom: 5px;
+        }
+
+        .company-info {
+            font-size: 9px;
+            margin-bottom: 5px;
+        }
+
+        .ticket-info {
+            display: flex;
+            justify-content: space-between;
+            font-size: 9px;
+            margin-bottom: 5px;
+        }
+
+        .client-info {
+            margin-bottom: 5px;
+        }
+
+        .products {
+            flex: 1;
+            margin-bottom: 5px;
+        }
+
+        .product-item {
+            display: flex;
+            justify-content: space-between;
+            font-size: 8px;
+            margin-bottom: 2px;
+        }
+
+        .totals {
+            border-top: 1px solid #000;
+            padding-top: 5px;
+        }
+
+        .total-line {
+            display: flex;
+            justify-content: space-between;
+            font-size: 9px;
+            margin-bottom: 2px;
+        }
+
+        .total-final {
+            font-weight: bold;
+            font-size: 10px;
+        }
+
+        .footer {
+            text-align: center;
+            font-size: 8px;
+            margin-top: 5px;
+            border-top: 1px dashed #000;
+            padding-top: 5px;
+        }
+
+        @media print {
+            body { margin: 0; }
+            .tickets-grid { gap: 5px; padding: 5px; }
+            .print-button { display: none; }
+        }
+    </style>
+</head>
+<body>
+    <div style="text-align: center; margin-bottom: 10px;" class="print-button">
+        <button onclick="window.print()" style="padding: 10px 20px; font-size: 14px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer;">
+            <i class="fas fa-print"></i> Imprimir
+        </button>
+    </div>
+    <div class="tickets-grid">
+        {% for ticket in tickets %}
+        <div class="ticket">
+            <div class="ticket-header">
+                <div class="company-info">
+                    <strong>{{ ticket.company.name }}</strong><br>
+                    RUC: {{ ticket.company.ruc }}<br>
+                    {{ ticket.company.address }}
+                </div>
+            </div>
+
+            <div class="ticket-info">
+                <span>Ticket: #{{ ticket.document_number }}</span>
+                <span>{{ ticket.date|date:"d/m/Y H:i" }}</span>
+            </div>
+
+            <div class="client-info">
+                Cliente: {{ ticket.client }}<br>
+                CI/RUC: {{ ticket.ci_ruc }}<br>
+                {% if ticket.phone %}Tel: {{ ticket.phone }}{% endif %}
+                {% if ticket.plate %}Placa: {{ ticket.plate }}{% endif %}
+            </div>
+
+            <div class="products">
+                {% for detail in ticket.details_list %}
+                <div class="product-item">
+                    <span>{{ detail.product }}</span>
+                    <span>{{ detail.quantity }} x ${{ detail.unit_price|floatformat:2 }}</span>
+                    <span>${{ detail.total|floatformat:2 }}</span>
+                </div>
+                {% endfor %}
+            </div>
+
+            <div class="totals">
+                <div class="total-line">
+                    <span>Subtotal:</span>
+                    <span>${{ ticket.subtotal|floatformat:2 }}</span>
+                </div>
+                <div class="total-line">
+                    <span>IVA ({{ ticket.iva_percentage }}%):</span>
+                    <span>${{ ticket.iva_amount|floatformat:2 }}</span>
+                </div>
+                <div class="total-line total-final">
+                    <span>TOTAL:</span>
+                    <span>${{ ticket.total|floatformat:2 }}</span>
+                </div>
+            </div>
+
+            <div class="footer">
+                Vendedor: {{ ticket.seller }}<br>
+                ¡Gracias por su compra!
+            </div>
+        </div>
+        {% endfor %}
+
+        <!-- Fill empty slots if less than 6 tickets -->
+        {% for i in tickets|length|add:1|make_list %}
+            {% if forloop.counter > tickets|length %}
+            <div class="ticket" style="visibility: hidden;">
+                <!-- Empty ticket for layout -->
+            </div>
+            {% endif %}
+        {% endfor %}
+    </div>
+</body>
+</html>
