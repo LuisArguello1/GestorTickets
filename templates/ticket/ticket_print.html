@@ -1,0 +1,489 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ticket #{{ ticket.document_number }}</title>
+    <style>
+        /* ============================================
+           CONFIGURACIÓN CRÍTICA DE @PAGE
+           IMPORTANTE: Los navegadores NO respetan size personalizados
+           La solución es configurar el driver de impresora
+           ============================================ */
+        @page {
+            /* Eliminar TODOS los márgenes */
+            margin: 0;
+            padding: 0;
+            
+            {% if size == 'A4' %}
+                size: A4 portrait;
+            {% else %}
+                /* Para tickets: usar tamaño automático */
+                size: auto;
+            {% endif %}
+        }
+
+        /* ============================================
+           RESET TOTAL
+           ============================================ */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            margin: 0;
+            padding: 0;
+        }
+
+        /* ============================================
+           BODY: ANCHO EXACTO DEL TICKET
+           ============================================ */
+        body {
+            margin: 0;
+            padding: 0;
+            
+            /* ANCHO FIJO según tamaño */
+            {% if size == '58' %}
+                width: 58mm;
+                max-width: 58mm;
+                min-width: 58mm;
+            {% elif size == '80' %}
+                width: 80mm;
+                max-width: 80mm;
+                min-width: 80mm;
+            {% else %}
+                width: 210mm;
+                max-width: 210mm;
+            {% endif %}
+            
+            /* Tipografía monoespaciada POS */
+            font-family: 'Courier New', Courier, monospace;
+            
+            {% if size == '58' %}
+                font-size: 8px;
+                padding: 2mm;
+            {% elif size == '80' %}
+                font-size: 10px;
+                padding: 3mm;
+            {% else %}
+                font-size: 11px;
+                padding: 10mm;
+            {% endif %}
+            
+            line-height: 1.2;
+            color: #000;
+            background: #fff;
+        }
+
+        /* ============================================
+           UTILIDADES
+           ============================================ */
+        .center { text-align: center; }
+        .right { text-align: right; }
+        .bold { font-weight: bold; }
+        .small { font-size: 85%; }
+
+        /* ============================================
+           CABECERA
+           ============================================ */
+        .header {
+            text-align: center;
+            margin-bottom: 5px;
+        }
+
+        .company-name {
+            font-weight: bold;
+            {% if size == '58' %}
+                font-size: 10px;
+            {% elif size == '80' %}
+                font-size: 12px;
+            {% else %}
+                font-size: 14px;
+            {% endif %}
+            margin-bottom: 2px;
+        }
+
+        .company-info {
+            {% if size == '58' %}
+                font-size: 7px;
+            {% elif size == '80' %}
+                font-size: 9px;
+            {% else %}
+                font-size: 10px;
+            {% endif %}
+            line-height: 1.3;
+        }
+
+        /* ============================================
+           DIVISORES
+           ============================================ */
+        .divider {
+            border: none;
+            border-top: 1px dashed #000;
+            margin: 4px 0;
+            height: 0;
+        }
+
+        /* ============================================
+           TÍTULO
+           ============================================ */
+        .ticket-title {
+            text-align: center;
+            font-weight: bold;
+            margin: 5px 0;
+            {% if size == '58' %}
+                font-size: 9px;
+            {% elif size == '80' %}
+                font-size: 11px;
+            {% else %}
+                font-size: 13px;
+            {% endif %}
+        }
+
+        /* ============================================
+           INFO CLIENTE
+           ============================================ */
+        .info {
+            {% if size == '58' %}
+                font-size: 7px;
+            {% elif size == '80' %}
+                font-size: 9px;
+            {% else %}
+                font-size: 10px;
+            {% endif %}
+            line-height: 1.4;
+            margin: 5px 0;
+        }
+
+        .info-row {
+            margin: 1px 0;
+            word-wrap: break-word;
+        }
+
+        /* ============================================
+           TABLA DE PRODUCTOS
+           ============================================ */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 5px 0;
+            {% if size == '58' %}
+                font-size: 7px;
+            {% elif size == '80' %}
+                font-size: 9px;
+            {% else %}
+                font-size: 10px;
+            {% endif %}
+        }
+
+        thead {
+            border-bottom: 1px solid #000;
+        }
+
+        th, td {
+            padding: 2px 1px;
+            text-align: left;
+        }
+
+        th {
+            font-weight: bold;
+        }
+
+        .col-product { 
+            {% if size == '58' %}
+                width: 45%;
+            {% else %}
+                width: 40%;
+            {% endif %}
+            word-wrap: break-word;
+        }
+
+        .col-qty, .col-price, .col-total {
+            text-align: right;
+            {% if size == '58' %}
+                width: 18%;
+            {% else %}
+                width: 20%;
+            {% endif %}
+        }
+
+        /* ============================================
+           TOTALES
+           ============================================ */
+        .totals {
+            margin-top: 5px;
+            {% if size == '58' %}
+                font-size: 8px;
+            {% elif size == '80' %}
+                font-size: 10px;
+            {% else %}
+                font-size: 11px;
+            {% endif %}
+        }
+
+        .totals-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 2px 0;
+        }
+
+        .total-final {
+            font-weight: bold;
+            {% if size == '58' %}
+                font-size: 9px;
+            {% elif size == '80' %}
+                font-size: 11px;
+            {% else %}
+                font-size: 13px;
+            {% endif %}
+            border-top: 1px solid #000;
+            padding-top: 3px;
+            margin-top: 3px;
+        }
+
+        /* ============================================
+           PIE
+           ============================================ */
+        .footer {
+            text-align: center;
+            margin-top: 8px;
+            {% if size == '58' %}
+                font-size: 7px;
+            {% elif size == '80' %}
+                font-size: 9px;
+            {% else %}
+                font-size: 10px;
+            {% endif %}
+        }
+
+        /* Espacio para corte */
+        .cut-space {
+            {% if size != 'A4' %}
+                height: 20mm;
+            {% endif %}
+        }
+
+        /* ============================================
+           BOTONES (solo en pantalla)
+           ============================================ */
+        .no-print {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f5f5f5;
+            border: 1px solid #ddd;
+            text-align: center;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            margin: 5px;
+            font-size: 14px;
+            cursor: pointer;
+            border: 1px solid #333;
+            background: #fff;
+            border-radius: 4px;
+        }
+
+        .btn:hover {
+            background: #e0e0e0;
+        }
+
+        .instructions {
+            margin-top: 15px;
+            padding: 10px;
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            border-radius: 4px;
+            font-size: 12px;
+            text-align: left;
+        }
+
+        .instructions strong {
+            display: block;
+            margin-bottom: 5px;
+            color: #856404;
+        }
+
+        .instructions ol {
+            margin: 5px 0 5px 20px;
+        }
+
+        .instructions li {
+            margin: 3px 0;
+        }
+
+        /* ============================================
+           MEDIA QUERIES
+           ============================================ */
+        @media print {
+            /* Ocultar botones e instrucciones */
+            .no-print {
+                display: none !important;
+            }
+
+            /* Forzar ancho exacto */
+            html, body {
+                {% if size == '58' %}
+                    width: 58mm !important;
+                {% elif size == '80' %}
+                    width: 80mm !important;
+                {% else %}
+                    width: 210mm !important;
+                {% endif %}
+            }
+
+            /* Evitar saltos de página */
+            * {
+                page-break-inside: avoid;
+            }
+
+            table, thead, tbody, tr {
+                page-break-inside: avoid;
+            }
+        }
+
+        @media screen {
+            /* Preview en pantalla */
+            html {
+                background: #e5e5e5;
+                padding: 20px;
+                min-height: 100vh;
+            }
+
+            body {
+                margin: 0 auto;
+                box-shadow: 0 0 10px rgba(0,0,0,0.3);
+                background: #fff;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- CABECERA -->
+    <div class="header">
+        <div class="company-name">{{ ticket.company.name }}</div>
+        <div class="company-info">
+            RUC: {{ ticket.company.ruc }}<br>
+            {{ ticket.company.address }}<br>
+            Tel: {{ ticket.company.phone }}
+        </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- TÍTULO -->
+    <div class="ticket-title">
+        TICKET DE VENTA<br>
+        N° {{ ticket.document_number }}
+    </div>
+
+    <hr class="divider">
+
+    <!-- INFO CLIENTE -->
+    <div class="info">
+        <div class="info-row">Fecha: {{ ticket.date|date:"d/m/Y H:i" }}</div>
+        <div class="info-row">Cliente: {{ ticket.client }}</div>
+        <div class="info-row">CI/RUC: {{ ticket.ci_ruc }}</div>
+        <div class="info-row">Vendedor: {{ ticket.seller }}</div>
+        {% if ticket.phone %}<div class="info-row">Tel: {{ ticket.phone }}</div>{% endif %}
+        {% if ticket.plate %}<div class="info-row">Placa: {{ ticket.plate }}</div>{% endif %}
+    </div>
+
+    <hr class="divider">
+
+    <!-- PRODUCTOS -->
+    <table>
+        <thead>
+            <tr>
+                <th class="col-product">Producto</th>
+                <th class="col-qty">Cant.</th>
+                <th class="col-price">P.Unit</th>
+                <th class="col-total">Total</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for detail in details %}
+            <tr>
+                <td class="col-product">{{ detail.product }}</td>
+                <td class="col-qty">{{ detail.quantity|floatformat:3 }}</td>
+                <td class="col-price">${{ detail.unit_price|floatformat:2 }}</td>
+                <td class="col-total">${{ detail.total|floatformat:2 }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <hr class="divider">
+
+    <!-- TOTALES -->
+    <div class="totals">
+        <div class="totals-row">
+            <span>Subtotal:</span>
+            <span>${{ ticket.subtotal|floatformat:2 }}</span>
+        </div>
+        <div class="totals-row">
+            <span>IVA ({{ ticket.iva_percentage|floatformat:0 }}%):</span>
+            <span>${{ ticket.iva_amount|floatformat:2 }}</span>
+        </div>
+        <div class="totals-row total-final">
+            <span>TOTAL:</span>
+            <span>${{ ticket.total|floatformat:2 }}</span>
+        </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- PIE -->
+    <div class="footer">
+        ¡Gracias por su compra!<br>
+        {{ ticket.company.name }}
+    </div>
+
+    <!-- ESPACIO CORTE -->
+    <div class="cut-space"></div>
+
+    <!-- BOTONES E INSTRUCCIONES -->
+    <div class="no-print">
+        <button class="btn" onclick="window.print()">🖨️ Imprimir Ticket</button>
+        <button class="btn" onclick="window.close()">❌ Cerrar</button>
+
+        {% if size != 'A4' %}
+        <details class="instructions">
+            <summary><strong>⚠️ INSTRUCCIONES PARA IMPRIMIR TICKET {{ size }}mm (clic para ver)</strong></summary>
+            <ol>
+                <li><strong>Chrome/Edge:</strong>
+                    <ul>
+                        <li>Clic en "Imprimir Ticket" arriba</li>
+                        <li>En "Destino" → Seleccionar tu impresora térmica</li>
+                        <li>En "Más opciones" → <strong>Márgenes: Ninguno</strong></li>
+                        <li>Desactivar "Encabezados y pies de página"</li>
+                        <li>Click "Imprimir"</li>
+                    </ul>
+                </li>
+                <li><strong>Firefox:</strong>
+                    <ul>
+                        <li>Archivo → Imprimir</li>
+                        <li>Seleccionar impresora térmica</li>
+                        <li>En "Configuración de página" → Márgenes: 0</li>
+                    </ul>
+                </li>
+                <li><strong>Si NO tienes impresora térmica:</strong>
+                    <ul>
+                        <li>Guarda como PDF</li>
+                        <li>Imprime el PDF desde Acrobat (mejor control)</li>
+                        <li>O configura un tamaño personalizado {{ size }}mm x 297mm en tu impresora</li>
+                    </ul>
+                </li>
+            </ol>
+            <p style="margin-top: 10px; color: #856404;">
+                <strong>Nota:</strong> Los navegadores muestran vista previa en A4, pero al imprimir 
+                respetará el ancho del ticket si configuras la impresora correctamente.
+            </p>
+        </details>
+        {% endif %}
+    </div>
+</body>
+</html>

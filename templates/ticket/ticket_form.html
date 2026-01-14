@@ -1,0 +1,273 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+
+{% block title %}{% if is_edit %}Editar Ticket{% else %}Crear Ticket{% endif %}{% endblock %}
+
+{% block content %}
+<div class="h-screen flex flex-col bg-gray-50">
+    <!-- HEADER SUPERIOR -->
+    <div class="bg-white border-b border-gray-300 px-4 py-2 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+            <h1 class="text-base font-semibold text-gray-800">
+                {% if is_edit %}Editar Ticket{% else %}Crear Ticket{% endif %}
+            </h1>
+            {% if is_edit %}
+                <span class="inline-flex items-center px-2 py-0.5 text-xs font-medium bg-slate-100 text-slate-700 border border-slate-300 rounded">
+                    #{{ object.document_number }}
+                </span>
+            {% endif %}
+        </div>
+        <a href="{% url 'ticket:ticket_list' %}" class="inline-flex items-center px-3 py-1 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded hover:bg-gray-50">
+            <i class="fas fa-arrow-left mr-1.5 text-xs"></i>Volver
+        </a>
+    </div>
+
+    <!-- MENSAJES DE ERROR -->
+    {% if form.errors or detail_formset.errors %}
+        <div class="mx-4 mt-3 bg-red-50 border border-red-300 text-red-800 px-3 py-2 rounded text-xs">
+            <strong class="font-semibold">Errores en el formulario:</strong>
+            <ul class="list-disc list-inside mt-1 space-y-0.5">
+                {% for field, errors in form.errors.items %}
+                    {% for error in errors %}
+                        <li>{{ field }}: {{ error }}</li>
+                    {% endfor %}
+                {% endfor %}
+                {% if detail_formset.non_form_errors %}
+                    {% for error in detail_formset.non_form_errors %}
+                        <li>{{ error }}</li>
+                    {% endfor %}
+                {% endif %}
+            </ul>
+        </div>
+    {% endif %}
+
+    <!-- FORMULARIO PRINCIPAL -->
+    <form method="post" id="ticket-form" class="flex-1 overflow-hidden flex flex-col">
+        {% csrf_token %}
+
+        <!-- CUERPO EN GRID -->
+        <div class="flex-1 grid grid-cols-12 gap-4 p-4 overflow-auto">
+            
+            <!-- COLUMNA IZQUIERDA: DATOS GENERALES -->
+            <div class="col-span-4 bg-white border border-gray-300 rounded h-fit">
+                <div class="bg-slate-100 border-b border-gray-300 px-3 py-1.5">
+                    <h3 class="text-xs font-semibold text-gray-700 uppercase tracking-wide">Datos Generales</h3>
+                </div>
+                <div class="p-3 space-y-2.5">
+                    <!-- DATOS DE LA COMPAÑÍA -->
+                    <div class="bg-slate-50 border border-slate-200 rounded p-2">
+                        <h4 class="text-xs font-semibold text-gray-700 mb-1">Compañía</h4>
+                        <div class="text-xs text-gray-600 space-y-0.5">
+                            <div><strong>{{ default_company.name }}</strong></div>
+                            <div>RUC: {{ default_company.ruc }}</div>
+                            <div>{{ default_company.address }}</div>
+                            <div>Tel: {{ default_company.phone }}</div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label for="{{ form.client.id_for_label }}" class="block text-xs font-medium text-gray-600 mb-0.5">
+                                Cliente <span class="text-red-500">*</span>
+                            </label>
+                            {{ form.client }}
+                            {% if form.client.errors %}
+                                <p class="mt-0.5 text-xs text-red-600">{{ form.client.errors.0 }}</p>
+                            {% endif %}
+                        </div>
+                        <div>
+                            <label for="{{ form.ci_ruc.id_for_label }}" class="block text-xs font-medium text-gray-600 mb-0.5">
+                                CI/RUC <span class="text-red-500">*</span>
+                            </label>
+                            {{ form.ci_ruc }}
+                            {% if form.ci_ruc.errors %}
+                                <p class="mt-0.5 text-xs text-red-600">{{ form.ci_ruc.errors.0 }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div>
+                        <label for="{{ form.seller.id_for_label }}" class="block text-xs font-medium text-gray-600 mb-0.5">
+                            Vendedor <span class="text-red-500">*</span>
+                        </label>
+                        {{ form.seller }}
+                        {% if form.seller.errors %}
+                            <p class="mt-0.5 text-xs text-red-600">{{ form.seller.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label for="{{ form.phone.id_for_label }}" class="block text-xs font-medium text-gray-600 mb-0.5">
+                                Teléfono
+                            </label>
+                            {{ form.phone }}
+                            {% if form.phone.errors %}
+                                <p class="mt-0.5 text-xs text-red-600">{{ form.phone.errors.0 }}</p>
+                            {% endif %}
+                        </div>
+                        <div>
+                            <label for="{{ form.plate.id_for_label }}" class="block text-xs font-medium text-gray-600 mb-0.5">
+                                Placa
+                            </label>
+                            {{ form.plate }}
+                            {% if form.plate.errors %}
+                                <p class="mt-0.5 text-xs text-red-600">{{ form.plate.errors.0 }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- COLUMNA DERECHA: DETALLES DEL TICKET -->
+            <div class="col-span-8 bg-white border border-gray-300 rounded flex flex-col h-fit">
+                <div class="bg-slate-100 border-b border-gray-300 px-3 py-1.5 flex items-center justify-between">
+                    <h3 class="text-xs font-semibold text-gray-700 uppercase tracking-wide">
+                        Detalle del Ticket <span class="text-red-500">*</span>
+                    </h3>
+                    <button type="button" id="add-detail" class="inline-flex items-center px-2 py-1 text-xs font-medium text-white bg-slate-600 border border-slate-700 rounded hover:bg-slate-700">
+                        <i class="fas fa-plus text-xs mr-1"></i>Agregar
+                    </button>
+                </div>
+
+                <div id="detail-formset" class="flex-1 overflow-auto">
+                    {{ detail_formset.management_form }}
+                    
+                    <!-- TABLA DE DETALLES -->
+                    <table class="w-full text-xs">
+                        <thead class="bg-slate-50 border-b border-gray-300 sticky top-0">
+                            <tr>
+                                <th class="px-2 py-1.5 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider w-5/12">Producto</th>
+                                <th class="px-2 py-1.5 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider w-2/12">Cantidad</th>
+                                <th class="px-2 py-1.5 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider w-2/12">P. Unit.</th>
+                                <th class="px-2 py-1.5 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider w-2/12">Subtotal</th>
+                                <th class="px-2 py-1.5 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider w-1/12"></th>
+                            </tr>
+                        </thead>
+                        <tbody id="detail-forms">
+                            {% for form in detail_formset %}
+                                <tr class="detail-form border-b border-gray-200 hover:bg-gray-50" data-form-index="{{ forloop.counter0 }}">
+                                    <td class="px-2 py-1.5">
+                                        {{ form.product }}
+                                        {% if form.product.errors %}
+                                            <p class="mt-0.5 text-xs text-red-600">{{ form.product.errors.0 }}</p>
+                                        {% endif %}
+                                    </td>
+                                    <td class="px-2 py-1.5">
+                                        {{ form.quantity }}
+                                        {% if form.quantity.errors %}
+                                            <p class="mt-0.5 text-xs text-red-600">{{ form.quantity.errors.0 }}</p>
+                                        {% endif %}
+                                    </td>
+                                    <td class="px-2 py-1.5">
+                                        {{ form.unit_price }}
+                                        {% if form.unit_price.errors %}
+                                            <p class="mt-0.5 text-xs text-red-600">{{ form.unit_price.errors.0 }}</p>
+                                        {% endif %}
+                                    </td>
+                                    <td class="px-2 py-1.5 text-right">
+                                        <span class="text-xs font-medium text-gray-700 row-subtotal">$0.00</span>
+                                    </td>
+                                    <td class="px-2 py-1.5 text-center">
+                                        <span style="display: none;">{{ form.DELETE }}</span>
+                                        {{ form.id }}
+                                        <button type="button" class="remove-detail inline-flex items-center justify-center w-6 h-6 text-red-600 hover:bg-red-50 rounded border border-red-300 hover:border-red-400">
+                                            <i class="fas fa-times text-xs"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% if form.non_field_errors %}
+                                    <tr>
+                                        <td colspan="5" class="px-2 py-1 text-xs text-red-600">{{ form.non_field_errors.0 }}</td>
+                                    </tr>
+                                {% endif %}
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- FOOTER FIJO -->
+        <div class="bg-white border-t border-gray-300 px-4 py-2.5 flex items-center justify-between">
+            <!-- TOTALES A LA IZQUIERDA -->
+            <div class="flex items-center gap-6 text-xs">
+                <div class="flex items-center gap-2">
+                    <span class="text-gray-600 font-medium">Subtotal:</span>
+                    <span class="text-gray-900 font-semibold" id="subtotal-display">$0.00</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="text-gray-600 font-medium">IVA (<span id="iva-percentage">{{ iva_percentage }}</span>%):</span>
+                    <span class="text-gray-900 font-semibold" id="iva-display">$0.00</span>
+                </div>
+                <div class="flex items-center gap-2 pl-4 border-l border-gray-300">
+                    <span class="text-gray-700 font-semibold text-sm">TOTAL:</span>
+                    <span class="text-slate-900 font-bold text-base" id="total-display">$0.00</span>
+                </div>
+            </div>
+
+            <!-- BOTONES A LA DERECHA -->
+            <div class="flex items-center gap-2">
+                <a href="{% url 'ticket:ticket_list' %}" class="inline-flex items-center px-4 py-1.5 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded hover:bg-gray-50">
+                    Cancelar
+                </a>
+                <button type="submit" class="inline-flex items-center px-4 py-1.5 text-xs font-medium text-white bg-slate-700 border border-slate-800 rounded hover:bg-slate-800">
+                    <i class="fas fa-save mr-1.5 text-xs"></i>{% if is_edit %}Actualizar{% else %}Crear{% endif %} Ticket
+                </button>
+            </div>
+        </div>
+
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{% static 'js/ticket_form.js' %}"></script>
+<script>
+    // Modal de éxito con SweetAlert (solo para creación)
+    {% if show_modal %}
+    Swal.fire({
+        title: '¡Ticket Creado!',
+        text: 'El ticket {{ created_ticket.document_number }} ha sido creado exitosamente.',
+        icon: 'success',
+        showCancelButton: true,
+        confirmButtonText: 'Imprimir 80mm',
+        cancelButtonText: 'Opciones',
+        showDenyButton: true,
+        denyButtonText: 'Imprimir A4',
+        allowOutsideClick: false,
+        allowEscapeKey: false
+    }).then((result) => {
+        if (result.isConfirmed) {
+            window.open('{% url "ticket:ticket_print" created_ticket.pk %}?size=80', '_blank');
+            showNextModal();
+        } else if (result.isDenied) {
+            window.open('{% url "ticket:ticket_print" created_ticket.pk %}?size=A4', '_blank');
+            showNextModal();
+        } else {
+            showNextModal();
+        }
+    });
+
+    function showNextModal() {
+        Swal.fire({
+            title: '¿Qué desea hacer ahora?',
+            showDenyButton: true,
+            showCancelButton: true,
+            confirmButtonText: 'Crear Otro Ticket',
+            denyButtonText: 'Volver al Listado',
+            cancelButtonText: 'Ver Ticket',
+        }).then((result) => {
+            if (result.isConfirmed) {
+                window.location.href = '{% url "ticket:ticket_create" %}';
+            } else if (result.isDenied) {
+                window.location.href = '{% url "ticket:ticket_list" %}';
+            } else if (result.dismiss === Swal.DismissReason.cancel) {
+                window.location.href = '{% url "ticket:ticket_detail" created_ticket.pk %}';
+            }
+        });
+    }
+    {% endif %}
+</script>
+{% endblock %}

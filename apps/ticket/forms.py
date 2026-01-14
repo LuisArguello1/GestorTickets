@@ -1,5 +1,5 @@
 from django import forms
-from django.forms import modelformset_factory
+from django.forms import inlineformset_factory, modelformset_factory
 from .models import Ticket, TicketDetail
 from apps.core.forms.base_form import BaseModelForm
 
@@ -15,8 +15,8 @@ class TicketDetailForm(BaseModelForm):
         model = TicketDetail
         fields = ['product', 'quantity', 'unit_price']  # Excluye total (calculado) y ticket (FK)
         widgets = {
-            'quantity': forms.NumberInput(attrs={'step': '0.01', 'min': '0'}),
-            'unit_price': forms.NumberInput(attrs={'step': '0.01', 'min': '0'}),
+            'quantity': forms.NumberInput(attrs={'step': '0.00000001', 'min': '0'}),
+            'unit_price': forms.NumberInput(attrs={'step': '0.00000001', 'min': '0'}),
         }
 
     def clean_quantity(self):
@@ -43,7 +43,7 @@ class TicketForm(BaseModelForm):
 
     class Meta:
         model = Ticket
-        fields = ['company', 'seller', 'client', 'ci_ruc', 'phone', 'plate']  # Excluye date, total, iva_percentage
+        fields = ['seller', 'client', 'ci_ruc', 'phone', 'plate']  # Excluye date, total, iva_percentage, company
         widgets = {
             'ci_ruc': forms.TextInput(attrs={'maxlength': '20'}),
             'phone': forms.TextInput(attrs={'maxlength': '20'}),
@@ -54,7 +54,8 @@ class TicketForm(BaseModelForm):
         super().__init__(*args, **kwargs)
         # Si es edición, mostrar detalles existentes
         if self.instance and self.instance.pk:
-            self.fields['company'].disabled = True  # No cambiar compañía en edición
+            if 'company' in self.fields:
+                self.fields['company'].disabled = True  # No cambiar compañía en edición
 
     def clean_ci_ruc(self):
         """Valida formato básico del CI/RUC."""
@@ -75,10 +76,3 @@ class TicketForm(BaseModelForm):
         return instance
 
 
-# Formset para detalles del ticket
-TicketDetailFormSet = modelformset_factory(
-    TicketDetail,
-    form=TicketDetailForm,
-    extra=1,  # Una fila extra para agregar
-    can_delete=True,  # Permitir eliminar
-)
