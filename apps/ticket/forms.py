@@ -53,6 +53,31 @@ class TicketForm(BaseModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
+        # Hacer campos opcionales
+        self.fields['seller'].required = False
+        self.fields['phone'].required = False
+
+        # Hacer client y ci_ruc read-only
+        self.fields['client'].widget.attrs['readonly'] = True
+        self.fields['ci_ruc'].widget.attrs['readonly'] = True
+
+        # Inicializar valores desde la compañía
+        company = None
+        if hasattr(self, 'instance') and self.instance.pk and self.instance.company:
+            # Edición: usar la compañía del ticket existente
+            company = self.instance.company
+        else:
+            # Creación: usar la compañía por defecto
+            from apps.company.models import Company
+            try:
+                company = Company.objects.first()
+            except Company.DoesNotExist:
+                company = None
+
+        if company:
+            self.fields['client'].initial = company.client_name
+            self.fields['ci_ruc'].initial = company.client_ruc
+
         if self.instance and self.instance.pk:
             if 'company' in self.fields:
                 self.fields['company'].disabled = True  # No cambiar compañía en edición

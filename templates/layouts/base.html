@@ -39,6 +39,62 @@
     <link rel="stylesheet" href="{% static 'css/base.css' %}">
     <link rel="stylesheet" href="{% static 'css/loading.css' %}">
 
+    
+    <script>
+    // Registrar Service Worker sin cache
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('/sw.js')
+                .then((registration) => {
+                    console.log('Service Worker registrado correctamente:', registration.scope);
+                    
+                    // Verificar si hay actualización
+                    registration.addEventListener('updatefound', () => {
+                        const newWorker = registration.installing;
+                        console.log('Nueva versión del Service Worker encontrada');
+                        
+                        newWorker.addEventListener('statechange', () => {
+                            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                // Hay una nueva versión disponible
+                                console.log('Nueva versión disponible, activando...');
+                                newWorker.postMessage({ type: 'SKIP_WAITING' });
+                                
+                                // Recargar la página cuando se active el nuevo SW
+                                let refreshing = false;
+                                navigator.serviceWorker.addEventListener('controllerchange', () => {
+                                    if (!refreshing) {
+                                        refreshing = true;
+                                        window.location.reload();
+                                    }
+                                });
+                            }
+                        });
+                    });
+                })
+                .catch((error) => {
+                    console.error('Error al registrar Service Worker:', error);
+                });
+        });
+        
+        // Función para limpiar cache manualmente (opcional)
+        window.clearAppCache = function() {
+            if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+                navigator.serviceWorker.controller.postMessage({ type: 'CLEAR_CACHE' });
+                
+                navigator.serviceWorker.addEventListener('message', (event) => {
+                    if (event.data && event.data.type === 'CACHE_CLEARED') {
+                        console.log(event.data.message);
+                        alert('Cache limpiado. La página se recargará.');
+                        window.location.reload();
+                    }
+                });
+            } else {
+                console.log('No hay Service Worker activo');
+            }
+        };
+    }
+    </script>
+
     <!-- Agregar extras a la base -->
     {% block extra_head %}{% endblock %}
     
@@ -73,42 +129,6 @@
     
     {% block extra_scripts %}{% endblock %}
 
-    <!-- PWA Service Worker Registration -->
-    <script>
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', function() {
-                navigator.serviceWorker.register('/sw.js', { scope: '/' })
-                    .then(function(registration) {
-                        // Service Worker registrado exitosamente
-                        
-                        // Verificar si hay una nueva versión
-                        registration.addEventListener('updatefound', function() {
-                            const newWorker = registration.installing;
-                            newWorker.addEventListener('statechange', function() {
-                                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                                    // Nueva versión disponible
-                                    if (confirm('Nueva versión disponible. ¿Actualizar ahora?')) {
-                                        newWorker.postMessage({ type: 'SKIP_WAITING' });
-                                        window.location.reload();
-                                    }
-                                }
-                            });
-                        });
-                    })
-                    .catch(function(error) {
-                        console.log('Error al registrar Service Worker:', error);
-                    });
-            });
-        }
-
-        // Detectar si está ejecutándose como PWA
-        window.addEventListener('load', function() {
-            if (window.matchMedia('(display-mode: standalone)').matches) {
-                console.log('Ejecutándose como PWA instalada');
-                // Aquí puedes agregar lógica específica para PWA
-            }
-        });
-    </script>
 
 </body>
 </html>

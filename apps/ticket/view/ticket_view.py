@@ -22,9 +22,9 @@ class TicketListView(ListView):
 
     def get_queryset(self):
         queryset = super().get_queryset().select_related('company')
-        company_id = self.request.GET.get('company')
-        if company_id:
-            queryset = queryset.filter(company_id=company_id)
+        seller = self.request.GET.get('seller')
+        if seller:
+            queryset = queryset.filter(seller__icontains=seller)
         search = self.request.GET.get('search')
         if search:
             queryset = queryset.filter(
@@ -38,7 +38,12 @@ class TicketListView(ListView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['companies'] = Ticket.objects.values_list('company', flat=True).distinct()
+        context['sellers'] = Ticket.objects.exclude(seller__isnull=True).exclude(seller='').values_list('seller', flat=True).distinct().order_by('seller')
+        # Breadcrumbs
+        context['breadcrumb_list'] = [
+            {'label': 'Dashboard', 'url': reverse_lazy('core:dashboard')},
+            {'label': 'Tickets'}
+        ]
         return context
 
 
@@ -53,6 +58,12 @@ class TicketDetailView(DetailView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['details'] = self.object.details.all()
+        # Breadcrumbs
+        context['breadcrumb_list'] = [
+            {'label': 'Dashboard', 'url': reverse_lazy('core:dashboard')},
+            {'label': 'Tickets', 'url': reverse_lazy('ticket:ticket_list')},
+            {'label': f'Ticket #{self.object.document_number}'}
+        ]
         return context
 
 
@@ -107,6 +118,13 @@ class TicketCreateView(CreateView):
         if company:
             context['default_company'] = company
             context['iva_percentage'] = company.iva_percentage
+
+        # Breadcrumbs
+        context['breadcrumb_list'] = [
+            {'label': 'Dashboard', 'url': reverse_lazy('core:dashboard')},
+            {'label': 'Tickets', 'url': reverse_lazy('ticket:ticket_list')},
+            {'label': 'Nuevo Ticket'}
+        ]
 
         return context
 
@@ -187,6 +205,14 @@ class TicketUpdateView(UpdateView):
         context['is_edit'] = True
         context['default_company'] = self.object.company
         context['iva_percentage'] = self.object.iva_percentage
+
+        # Breadcrumbs
+        context['breadcrumb_list'] = [
+            {'label': 'Dashboard', 'url': reverse_lazy('core:dashboard')},
+            {'label': 'Tickets', 'url': reverse_lazy('ticket:ticket_list')},
+            {'label': f'Editar Ticket #{self.object.document_number}'}
+        ]
+
         return context
 
     def form_valid(self, form):
@@ -263,7 +289,8 @@ class TicketPrintView(DetailView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['details'] = self.object.details.all()
-        context['size'] = self.request.GET.get('size', '80')  # 58, 80, A4
+        # Opciones: 58, 80, half (media hoja A4), A4
+        context['size'] = self.request.GET.get('size', 'half')
         return context
 
 
@@ -285,7 +312,7 @@ class TicketMassPrintView(ListView):
             queryset = queryset.filter(date__date__gte=date_from)
         elif date_to:
             queryset = queryset.filter(date__date__lte=date_to)
-        return queryset.order_by('-date')[:6]  # Máximo 6 tickets
+        return queryset.order_by('-date')  # Máximo 6 tickets
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)

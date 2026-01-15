@@ -11,10 +11,12 @@ class CompanyForm(BaseModelForm):
 
     class Meta:
         model = Company
-        fields = ['name', 'ruc', 'phone', 'sri_access_key', 'address', 'iva_percentage']
+        fields = ['name', 'ruc', 'phone', 'sri_access_key', 'address', 'iva_percentage', 'client_name', 'client_ruc']
         widgets = {
             'address': forms.Textarea(attrs={'rows': 3}),
             'iva_percentage': forms.NumberInput(attrs={'step': '0.01', 'min': '0', 'max': '100'}),
+            'client_name': forms.TextInput(attrs={'placeholder': 'Ej: Universidad Estatal de Milagro'}),
+            'client_ruc': forms.TextInput(attrs={'maxlength': '20', 'placeholder': 'RUC del cliente'}),
         }
 
     def clean_ruc(self):
@@ -29,9 +31,9 @@ class CompanyForm(BaseModelForm):
             raise forms.ValidationError("Este RUC ya está registrado.")
         return ruc
 
-    def clean_iva_percentage(self):
-        """Valida que el IVA esté en rango válido."""
-        iva = self.cleaned_data.get('iva_percentage')
-        if iva is not None and (iva < 0 or iva > 100):
-            raise forms.ValidationError("El porcentaje de IVA debe estar entre 0 y 100.")
-        return iva
+    def clean_client_ruc(self):
+        """Valida que el RUC del cliente tenga formato básico."""
+        client_ruc = self.cleaned_data.get('client_ruc')
+        if client_ruc and len(client_ruc) > 20:
+            raise forms.ValidationError("El RUC del cliente no puede exceder 20 caracteres.")
+        return client_ruc

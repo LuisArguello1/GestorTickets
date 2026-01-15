@@ -14,10 +14,10 @@ class Ticket(models.Model):
     )
 
     date = models.DateTimeField(auto_now_add=True, verbose_name="Fecha")  # Automática
-    seller = models.CharField(max_length=255, verbose_name="Vendedor")  # Manual
-    client = models.CharField(max_length=255, verbose_name="Cliente")  # Manual
-    ci_ruc = models.CharField(max_length=20, verbose_name="CI/RUC")  # Manual
-    phone = models.CharField(max_length=20, verbose_name="Teléfono")  # Manual
+    seller = models.CharField(max_length=255, blank=True, verbose_name="Vendedor")  # Opcional
+    client = models.CharField(max_length=255, verbose_name="Cliente")  # Automático desde compañía
+    ci_ruc = models.CharField(max_length=20, verbose_name="CI/RUC")  # Automático desde compañía
+    phone = models.CharField(max_length=20, blank=True, null=True, verbose_name="Teléfono")  # Opcional
     plate = models.CharField(max_length=20, verbose_name="Placa")  # Manual
     iva_percentage = models.DecimalField(max_digits=5, decimal_places=2, default=15.00, verbose_name="IVA Aplicado (%)")  # Guardado para historial
     total = models.DecimalField(max_digits=15, decimal_places=8, default=0.00000000, verbose_name="Total")  # Calculado con 8 decimales
@@ -65,6 +65,12 @@ class Ticket(models.Model):
     def save(self, *args, **kwargs):
         if not self.document_number:
             self.generate_document_number()
+        
+        # Auto-llenar client y ci_ruc desde la compañía
+        if self.company:
+            self.client = self.company.client_name
+            self.ci_ruc = self.company.client_ruc
+        
         super().save(*args, **kwargs)
 
     class Meta:

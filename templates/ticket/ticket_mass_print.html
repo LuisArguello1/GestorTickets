@@ -6,9 +6,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Impresión Masiva de Tickets</title>
     <style>
+        /* ============================================
+           CONFIGURACIÓN DE PÁGINA
+           ============================================ */
         @page {
-            margin: 0.5cm;
-            size: A4 landscape;
+            margin: 0;
+            size: A4 portrait;
         }
 
         * {
@@ -17,170 +20,379 @@
             box-sizing: border-box;
         }
 
-        body {
-            font-family: 'Courier New', monospace;
-            font-size: 10px;
-            line-height: 1.2;
-            color: #000;
-            background: white;
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
         }
 
+        body {
+            font-family: 'Courier New', 'Courier', monospace;
+            color: #000;
+            background: #fff;
+        }
+
+        /* ============================================
+           CONTENEDOR DE PÁGINAS
+           ============================================ */
+        .page-container {
+            width: 210mm;
+            min-height: 297mm;
+            margin-bottom: 10mm;
+            background: white;
+            page-break-after: always;
+        }
+
+        .page-container:last-child {
+            margin-bottom: 0;
+        }
+
+        /* ============================================
+           GRID DE TICKETS: 2x2 = 4 tickets por página
+           ============================================ */
         .tickets-grid {
             display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-            padding: 10px;
-            justify-items: center;
+            grid-template-columns: repeat(2, 1fr);
+            grid-template-rows: repeat(2, 1fr);
+            width: 100%;
+            height: 297mm;
+            gap: 0;
         }
 
+        /* ============================================
+           CADA TICKET: Ocupa 1/4 de la hoja A4
+           ============================================ */
         .ticket {
-            border: 1px solid #000;
-            padding: 8px;
-            width: 80mm;
-            height: 60mm;
+            width: 105mm;
+            height: 148.5mm;
+            padding: 5mm;
+            border: 1px dashed #ccc;
+            page-break-inside: avoid;
             display: flex;
             flex-direction: column;
-            justify-content: space-between;
-            page-break-inside: avoid;
-            box-sizing: border-box;
+            font-size: 11px;
+            line-height: 1.4;
         }
 
-        .ticket-header {
-            text-align: center;
-            border-bottom: 1px dashed #000;
-            padding-bottom: 5px;
-            margin-bottom: 5px;
+        /* ============================================
+           CABECERA
+           ============================================ */
+        .header {
+            text-align: left;
+            margin-bottom: 8px;
+        }
+
+        .company-name {
+            font-weight: bold;
+            font-size: 14px;
+            margin-bottom: 3px;
         }
 
         .company-info {
+            font-size: 10px;
+            line-height: 1.5;
+        }
+
+        /* ============================================
+           DIVISORES
+           ============================================ */
+        .divider {
+            border: none;
+            border-top: 1px dashed #000;
+            margin: 6px 0;
+        }
+
+        /* ============================================
+           TÍTULO
+           ============================================ */
+        .ticket-title {
+            text-align: left;
+            font-weight: bold;
+            font-size: 12px;
+            margin: 6px 0;
+        }
+
+        /* ============================================
+           INFO CLIENTE
+           ============================================ */
+        .info {
+            font-size: 10px;
+            line-height: 1.5;
+            margin: 6px 0;
+        }
+
+        .info-row {
+            margin: 1px 0;
+            word-wrap: break-word;
+        }
+
+        /* ============================================
+           TABLA DE PRODUCTOS
+           ============================================ */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 6px 0;
             font-size: 9px;
-            margin-bottom: 5px;
         }
 
-        .ticket-info {
-            display: flex;
-            justify-content: space-between;
-            font-size: 9px;
-            margin-bottom: 5px;
+        thead {
+            border-bottom: 1px solid #000;
         }
 
-        .client-info {
-            margin-bottom: 5px;
+        th, td {
+            padding: 2px 1px;
+            text-align: left;
         }
 
-        .products {
-            flex: 1;
-            margin-bottom: 5px;
+        th {
+            font-weight: bold;
         }
 
-        .product-item {
-            display: flex;
-            justify-content: space-between;
+        .col-product {
+            width: 50%;
+            word-wrap: break-word;
             font-size: 8px;
-            margin-bottom: 2px;
         }
 
+        .col-qty, .col-price, .col-total {
+            text-align: right;
+            width: 16%;
+            font-size: 8px;
+        }
+
+        /* ============================================
+           TOTALES
+           ============================================ */
         .totals {
-            border-top: 1px solid #000;
-            padding-top: 5px;
+            margin-top: 8px;
+            font-size: 10px;
         }
 
-        .total-line {
+        .totals-row {
             display: flex;
             justify-content: space-between;
-            font-size: 9px;
-            margin-bottom: 2px;
+            margin: 2px 0;
         }
 
         .total-final {
             font-weight: bold;
-            font-size: 10px;
+            font-size: 12px;
+            border-top: 1px solid #000;
+            padding-top: 4px;
+            margin-top: 4px;
         }
 
+        /* ============================================
+           PIE
+           ============================================ */
         .footer {
             text-align: center;
-            font-size: 8px;
-            margin-top: 5px;
+            font-size: 9px;
+            margin-top: auto;
+            padding-top: 6px;
             border-top: 1px dashed #000;
-            padding-top: 5px;
         }
 
+        /* ============================================
+           BOTÓN DE IMPRESIÓN
+           ============================================ */
+        .print-controls {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1000;
+            background: white;
+            padding: 15px 25px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            font-size: 14px;
+            font-weight: 600;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-print {
+            background: #2563eb;
+            color: white;
+        }
+
+        .btn-print:hover {
+            background: #1d4ed8;
+        }
+
+        .btn-close {
+            background: #6b7280;
+            color: white;
+        }
+
+        .btn-close:hover {
+            background: #4b5563;
+        }
+
+        .ticket-count {
+            font-size: 13px;
+            color: #374151;
+            font-weight: 500;
+        }
+
+        /* ============================================
+           MEDIA QUERIES
+           ============================================ */
         @media print {
-            body { margin: 0; }
-            .tickets-grid { gap: 5px; padding: 5px; }
-            .print-button { display: none; }
+            .print-controls {
+                display: none !important;
+            }
+
+            html, body {
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+
+            .page-container {
+                page-break-after: always;
+                margin-bottom: 0;
+                box-shadow: none;
+            }
+
+            .page-container:last-child {
+                page-break-after: auto;
+            }
+
+            .ticket {
+                page-break-inside: avoid;
+                border-color: #000;
+            }
+        }
+
+        @media screen {
+            body {
+                background: #e5e5e5;
+                padding: 20px;
+            }
+
+            .page-container {
+                margin: 0 auto 20px auto;
+                box-shadow: 0 0 10px rgba(0,0,0,0.3);
+            }
         }
     </style>
 </head>
 <body>
-    <div style="text-align: center; margin-bottom: 10px;" class="print-button">
-        <button onclick="window.print()" style="padding: 10px 20px; font-size: 14px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer;">
-            <i class="fas fa-print"></i> Imprimir
+    <!-- CONTROLES DE IMPRESIÓN -->
+    <div class="print-controls">
+        <span class="ticket-count">📄 {{ tickets|length }} ticket{{ tickets|length|pluralize }}</span>
+        <button onclick="window.print()" class="btn btn-print">
+            🖨️ Imprimir Tickets
+        </button>
+        <button onclick="window.close()" class="btn btn-close">
+            ❌ Cerrar
         </button>
     </div>
-    <div class="tickets-grid">
-        {% for ticket in tickets %}
+
+    <!-- GRID DE TICKETS: 2x2 = 4 por página -->
+    {% for ticket in tickets %}
+        {% if forloop.counter0|divisibleby:4 and forloop.counter0 > 0 %}
+            </div></div> <!-- Cierra grid y page-container -->
+            <div class="page-container"><div class="tickets-grid">
+        {% elif forloop.first %}
+            <div class="page-container"><div class="tickets-grid">
+        {% endif %}
+
         <div class="ticket">
-            <div class="ticket-header">
+            <!-- CABECERA -->
+            <div class="header">
+                <div class="company-name">{{ ticket.company.name }}</div>
                 <div class="company-info">
-                    <strong>{{ ticket.company.name }}</strong><br>
                     RUC: {{ ticket.company.ruc }}<br>
-                    {{ ticket.company.address }}
+                    {{ ticket.company.address }}<br>
+                    Tel: {{ ticket.company.phone }}
                 </div>
             </div>
 
-            <div class="ticket-info">
-                <span>Ticket: #{{ ticket.document_number }}</span>
-                <span>{{ ticket.date|date:"d/m/Y H:i" }}</span>
+            <hr class="divider">
+
+            <!-- TÍTULO -->
+            <div class="ticket-title">
+                TICKET<br>
+                N° {{ ticket.document_number }}
             </div>
 
-            <div class="client-info">
-                Cliente: {{ ticket.client }}<br>
-                CI/RUC: {{ ticket.ci_ruc }}<br>
-                {% if ticket.phone %}Tel: {{ ticket.phone }}{% endif %}
-                {% if ticket.plate %}Placa: {{ ticket.plate }}{% endif %}
+            <hr class="divider">
+
+            <!-- INFO CLIENTE -->
+            <div class="info">
+                <div class="info-row"><strong>Fecha:</strong> {{ ticket.date|date:"d/m/Y H:i" }}</div>
+                <div class="info-row"><strong>Cliente:</strong> {{ ticket.client }}</div>
+                <div class="info-row"><strong>CI/RUC:</strong> {{ ticket.ci_ruc }}</div>
+                <div class="info-row"><strong>Vendedor:</strong> {{ ticket.seller }}</div>
+                {% if ticket.phone %}<div class="info-row"><strong>Tel:</strong> {{ ticket.phone }}</div>{% endif %}
+                {% if ticket.plate %}<div class="info-row"><strong>Placa:</strong> {{ ticket.plate }}</div>{% endif %}
             </div>
 
-            <div class="products">
-                {% for detail in ticket.details_list %}
-                <div class="product-item">
-                    <span>{{ detail.product }}</span>
-                    <span>{{ detail.quantity }} x ${{ detail.unit_price|floatformat:2 }}</span>
-                    <span>${{ detail.total|floatformat:2 }}</span>
-                </div>
-                {% endfor %}
-            </div>
+            <hr class="divider">
 
+            <!-- PRODUCTOS -->
+            <table>
+                <thead>
+                    <tr>
+                        <th class="col-product">Producto</th>
+                        <th class="col-qty">Cant.</th>
+                        <th class="col-price">P.Unit</th>
+                        <th class="col-total">Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for detail in ticket.details_list %}
+                    <tr>
+                        <td class="col-product">{{ detail.product }}</td>
+                        <td class="col-qty">{{ detail.quantity|floatformat:2 }}</td>
+                        <td class="col-price">${{ detail.unit_price|floatformat:2 }}</td>
+                        <td class="col-total">${{ detail.total|floatformat:2 }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            <hr class="divider">
+
+            <!-- TOTALES -->
             <div class="totals">
-                <div class="total-line">
+                <div class="totals-row">
                     <span>Subtotal:</span>
                     <span>${{ ticket.subtotal|floatformat:2 }}</span>
                 </div>
-                <div class="total-line">
-                    <span>IVA ({{ ticket.iva_percentage }}%):</span>
+                <div class="totals-row">
+                    <span>IVA ({{ ticket.iva_percentage|floatformat:0 }}%):</span>
                     <span>${{ ticket.iva_amount|floatformat:2 }}</span>
                 </div>
-                <div class="total-line total-final">
+                <div class="totals-row total-final">
                     <span>TOTAL:</span>
                     <span>${{ ticket.total|floatformat:2 }}</span>
                 </div>
             </div>
 
+            <!-- PIE -->
             <div class="footer">
-                Vendedor: {{ ticket.seller }}<br>
-                ¡Gracias por su compra!
+                ¡Gracias por su compra!<br>
+                {{ ticket.company.name }}
             </div>
         </div>
-        {% endfor %}
 
-        <!-- Fill empty slots if less than 6 tickets -->
-        {% for i in tickets|length|add:1|make_list %}
-            {% if forloop.counter > tickets|length %}
-            <div class="ticket" style="visibility: hidden;">
-                <!-- Empty ticket for layout -->
-            </div>
-            {% endif %}
-        {% endfor %}
-    </div>
+        {% if forloop.last %}
+            </div></div> <!-- Cierra grid y page-container -->
+        {% endif %}
+    {% endfor %}
 </body>
 </html>

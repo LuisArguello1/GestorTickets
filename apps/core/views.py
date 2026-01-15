@@ -36,8 +36,10 @@ def service_worker(request):
         with open(sw_path, 'r', encoding='utf-8') as f:
             content = f.read()
         response = HttpResponse(content, content_type='application/javascript')
-        # Headers para Service Workers - permitir cache pero detectar cambios
-        response['Cache-Control'] = 'public, max-age=0'
+        # Headers para desarrollo - no cachear service worker
+        response['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+        response['Pragma'] = 'no-cache'
+        response['Expires'] = '0'
         response['Service-Worker-Allowed'] = '/'
         return response
     except FileNotFoundError:
